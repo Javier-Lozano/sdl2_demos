@@ -11,12 +11,18 @@
 SDL_Window *g_Window;
 SDL_GLContext *g_GLContext;
 
-unsigned int g_VBO, g_VAO, g_ShaderProgram;
+unsigned int g_VBO, g_VAO, g_EBO, g_ShaderProgram;
 
 float g_Vertices[] = {
 	-0.5f, -0.5f, 0.0f,
+	-0.5f,  0.5f, 0.0f,
 	 0.5f, -0.5f, 0.0f,
-	 0.0f,  0.5f, 0.0f
+	 0.5f,  0.5f, 0.0f
+};
+
+unsigned int g_Indices[] = {
+	0, 1, 2,
+	2, 1, 3
 };
 
 const char *g_VertexShaderSrc =
@@ -45,6 +51,7 @@ int main()
 	// Variables
 	SDL_Event event;
 	int loop = Init();
+	int show_wireframe = 0;
 
 	while (loop)
 	{
@@ -53,6 +60,13 @@ int main()
 		while(SDL_PollEvent(&event))
 		{
 			if (event.type == SDL_QUIT) { loop = 0; }
+			if (event.type == SDL_KEYDOWN)
+			{
+				// Toggle Wireframe
+				show_wireframe = !show_wireframe;
+				if (show_wireframe) { glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); }
+				else { glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); }
+			}
 		}
 
 		///// Rendering
@@ -66,8 +80,8 @@ int main()
 		// Bind VAO
 		glBindVertexArray(g_VAO);
 
-		// Draw Triangle
-		glDrawArrays(GL_TRIANGLES,0 ,3);
+		// Draw Elements
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		// Update to Screen
 		SDL_GL_SwapWindow(g_Window);
@@ -112,12 +126,6 @@ int Init()
 		fprintf(stderr, "Couldn't initialize GLAD.\n");
 		return 0;
 	}
-
-	// Print Info
-	printf("Vendor: %s\n", glGetString(GL_VENDOR));
-	printf("Renderer: %s\n", glGetString(GL_RENDERER));
-	printf("Version: %s\n", glGetString(GL_VERSION));
-	printf("Shading Language: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
 	// Set Viewport
 	glViewport(0, 0, WIN_W, WIN_H);
@@ -170,15 +178,19 @@ int Init()
 	// Vertex Specification.
 	glGenVertexArrays(1, &g_VAO);	// Vertex Attribute Object
 	glGenBuffers(1, &g_VBO);		// Vertex Buffer Object
+	glGenBuffers(1, &g_EBO);		// Element Buffer Object
 
 	glBindVertexArray(g_VAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, g_VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(g_Vertices), g_Vertices, GL_STATIC_DRAW);
 
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(g_Indices), g_Indices, GL_STATIC_DRAW);
+
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0); // Sames as above
 
 	// Unset bindings
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -192,6 +204,7 @@ void Close()
 	// Cleanup OpenGL
 	glDeleteVertexArrays(1, &g_VAO);
 	glDeleteBuffers(1, &g_VBO);
+	glDeleteBuffers(1, &g_EBO);
 	glDeleteProgram(g_ShaderProgram);
 
 	// Cleanup and Quit SDL
