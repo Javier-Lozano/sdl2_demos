@@ -48,7 +48,7 @@ void UpdateInput()
 
 int CheckInput(Button button, ButtonState state)
 {
-	if (button < 0 || button > BUTTON_COUNT) { return 0; }
+	if (button < 0 || button >= BUTTON_COUNT) { return 0; }
 
 	return (g_States[button] & state) > 0;
 }

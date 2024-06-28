@@ -41,8 +41,8 @@ int main(int argc, char *argv[])
 	// Variables
 	SDL_Window   *window;
 	SDL_Renderer *renderer;
-	SDL_Event event;
 	SDL_Texture *ui;
+	SDL_Event event;
 	int loop = 1;
 
 	SDL_Rect player = {320, 220, 32, 32};
@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 	ui = SDL_CreateTextureFromSurface(renderer, surface);
+	SDL_FreeSurface(surface);
 
 	// Main Loop
 	while(loop)
