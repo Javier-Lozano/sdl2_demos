@@ -1,5 +1,7 @@
+#include <stdbool.h>
 #include "SDL.h"
 
+#define WINDOW_TITLE  "Template"
 #define WINDOW_WIDTH  (800)
 #define WINDOW_HEIGHT (600)
 
@@ -7,7 +9,7 @@
 #define WINDOW_FLAGS (SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE)
 #define RENDER_FLAGS (SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
 
-static Uint8 SDLInit(SDL_Window **window, SDL_Renderer **renderer);
+static bool SDLInit(SDL_Window **window, SDL_Renderer **renderer);
 static void SDLClose(SDL_Window **window, SDL_Renderer **renderer);
 
 int main( int argc, char **argv)
@@ -15,7 +17,7 @@ int main( int argc, char **argv)
 	SDL_Window   *window   = NULL;
 	SDL_Renderer *renderer = NULL;
 	SDL_Event     event;
-	Uint8 is_running = 1;
+	bool is_running = true;
 
 	if (!SDLInit(&window, &renderer))
 	{
@@ -51,27 +53,29 @@ int main( int argc, char **argv)
 	return 0;
 }
 
-static Uint8 SDLInit(SDL_Window **window, SDL_Renderer **renderer)
+static bool SDLInit(SDL_Window **window, SDL_Renderer **renderer)
 {
 	if (SDL_Init(INIT_FLAGS) < 0)
 	{
 		fprintf(stderr, "Error: Couldn't init SDL. %s\n", SDL_GetError());
-		return 0;
+		return false;
 	}
-	*window = SDL_CreateWindow("Sim(ple) Music Player SDL", 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_FLAGS);
+
+	*window = SDL_CreateWindow(WINDOW_TITLE, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_FLAGS);
 	if (*window == NULL)
 	{
 		fprintf(stderr, "Error: Couldn't create window. %s\n", SDL_GetError());
-		return 0;
+		return false;
 	}
 	*renderer = SDL_CreateRenderer(*window, -1, RENDER_FLAGS);
 	if (*renderer == NULL)
 	{
 		fprintf(stderr, "Error: Couldn't create renderer. %s\n", SDL_GetError());
-		return 0;
+		return false;
 	}
 	SDL_SetRenderDrawBlendMode(*renderer, SDL_BLENDMODE_BLEND);
-	return 1;
+	
+	return true;
 }
 
 static void SDLClose(SDL_Window **window, SDL_Renderer **renderer)

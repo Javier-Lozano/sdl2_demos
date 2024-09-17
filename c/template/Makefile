@@ -4,23 +4,29 @@
 # ##################### #
 
 # Variables
-CC   = cc
-OPT  = -Wall
-INC  = `sdl2-config --cflags`
-LIB  = -lSDL2
-PROJ = template
+
+CC   := cc
+OPT  := -Wall
+INC  := `sdl2-config --cflags`
+LIB  := -lSDL2
+PROJ := template
 
 # Rules
 
 all: $(PROJ)
 
-$(PROJ): template.o
-	$(CC) $(OPT) $^ -o $@ $(LIB)
+debug: OPT += -g
+debug: $(PROJ)
 
-template.o: template.c
-	$(CC) $(OPT) $(INC) -c template.c $(LIB)
+$(PROJ): main.o
+	$(CC) $(OPT) $^ -o $@ $(LIB)
+main.o: main.c
+	$(CC) $(OPT) $(INC) -c $<
+
+# Clean
 
 .PHONY: clean
 clean:
-	rm -f *.o
-	rm -f template
+	@rm -fv *.o
+	@rm -fv $(PROJ)
+
