@@ -48,7 +48,7 @@ int main( int argc, char **argv)
 			if (event.type == SDL_QUIT) { is_running = 0; }
 		}
 		// Input
-		Input_Update(&event);
+		Input_Update();
 
 		// Update
 
@@ -67,11 +67,11 @@ int main( int argc, char **argv)
 		int mouse_dy;
 		GET_MOUSE_DELTA(&mouse_dx, &mouse_dy);
 
-		// This is a Circle Point Collision
+		// Circle <-> Point Collision Test
 		collision = (SDL_sqrt(
 					SDL_pow(((window_w / 2) + polygon_x - mouse_x), 2) +
 					SDL_pow(((window_h / 2) + polygon_y - mouse_y), 2)
-					) < radius) ? true: false;
+					) < SDL_abs(radius)) ? true: false;
 
 		// Increase / Decrease Polygon Radius
 		if (CHECK_KEY_DOWN(SDLK_UP))   { radius += 1.0f; }
@@ -107,11 +107,11 @@ int main( int argc, char **argv)
 		RenderText(renderer, font, 32, " [LEFT/RIGHT] - INCREASE OR DECREASE SIDE NUMBER.", 8, 96, color);
 		RenderText(renderer, font, 32, " SIDES:", 16, 128, color);
 		RenderText(renderer, font, 32, "RADIUS:", 16, 160, color);
-
+		// Data
 		color = (SDL_Color) {0xFF, 0, 0, 0xFF};
-		sprintf(buffer, "% 3d", sides);
+		sprintf(buffer, "% 4d", sides);
 		RenderText(renderer, font, 32, buffer, 128, 128, color);
-		sprintf(buffer, "%d", radius);
+		sprintf(buffer, "% 4d", radius);
 		RenderText(renderer, font, 32, buffer, 128, 160, color);
 
 		// Mouse Cursor Tail

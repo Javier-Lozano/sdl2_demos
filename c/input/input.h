@@ -7,20 +7,21 @@
 /***** Macros *****/
 
 // Keyboard
-#define CHECK_KEY_PRESSED(key)  ( Input_CheckScancode(SDL_GetScancodeFromKey(key), BUTTON_STATE_PRESSED)  )
-#define CHECK_KEY_RELEASED(key) ( Input_CheckScancode(SDL_GetScancodeFromKey(key), BUTTON_STATE_RELEASED) )
-#define CHECK_KEY_DOWN(key)     ( Input_CheckScancode(SDL_GetScancodeFromKey(key), BUTTON_STATE_DOWN)     )
+#define CHECK_SC_PRESSED(scancode)  ( Input_CheckScancode(scancode, BUTTON_STATE_PRESSED)  )
+#define CHECK_SC_RELEASED(scancode) ( Input_CheckScancode(scancode, BUTTON_STATE_RELEASED) )
+#define CHECK_SC_DOWN(scancode)     ( Input_CheckScancode(scancode, BUTTON_STATE_DOWN)     )
 
-#define CHECK_SC_PRESSED(key)  ( Input_CheckScancode(key, BUTTON_STATE_PRESSED)  )
-#define CHECK_SC_RELEASED(key) ( Input_CheckScancode(key, BUTTON_STATE_RELEASED) )
-#define CHECK_SC_DOWN(key)     ( Input_CheckScancode(key, BUTTON_STATE_DOWN)     )
+#define CHECK_KEY_PRESSED(key)  ( CHECK_SC_PRESSED(SDL_GetScancodeFromKey(key))  )
+#define CHECK_KEY_RELEASED(key) ( CHECK_SC_RELEASED(SDL_GetScancodeFromKey(key)) )
+#define CHECK_KEY_DOWN(key)     ( CHECK_SC_DOWN(SDL_GetScancodeFromKey(key))     )
 
 // Mouse
-#define CHECK_MOUSE_PRESSED(key)  ( Input_CheckMouseButton(key, BUTTON_STATE_PRESSED)  )
-#define CHECK_MOUSE_RELEASED(key) ( Input_CheckMouseButton(key, BUTTON_STATE_RELEASED) )
-#define CHECK_MOUSE_DOWN(key)     ( Input_CheckMouseButton(key, BUTTON_STATE_DOWN)     )
-#define GET_MOUSE_POSITION(x, y)  ( Input_GetMousePosition(x, y) )
-#define GET_MOUSE_DELTA(x, y)     ( SDL_GetRelativeMouseState(x, y) )
+#define CHECK_MOUSE_PRESSED(button)  ( Input_CheckMouseButton(button, BUTTON_STATE_PRESSED)  )
+#define CHECK_MOUSE_RELEASED(button) ( Input_CheckMouseButton(button, BUTTON_STATE_RELEASED) )
+#define CHECK_MOUSE_DOWN(button)     ( Input_CheckMouseButton(button, BUTTON_STATE_DOWN)     )
+
+#define GET_MOUSE_POSITION(x, y)  ( Input_GetMousePosition(x, y, NULL, NULL) )
+#define GET_MOUSE_DELTA(x, y)     ( Input_GetMousePosition(NULL, NULL, x, y) )
 
 /***** Types *****/
 
@@ -43,6 +44,6 @@ void Input_Update();
 
 bool Input_CheckScancode(SDL_Scancode scancode, Input_ButtonState state);
 bool Input_CheckMouseButton(Input_MouseButton mouse_button, Input_ButtonState state);
-void Input_GetMousePosition(int *x, int *y);
+void Input_GetMousePosition(int *x, int *y, int *dx, int *dy);
 
 #endif // _INPUT_H_
