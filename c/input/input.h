@@ -20,6 +20,7 @@
 #define CHECK_MOUSE_RELEASED(key) ( Input_CheckMouseButton(key, BUTTON_STATE_RELEASED) )
 #define CHECK_MOUSE_DOWN(key)     ( Input_CheckMouseButton(key, BUTTON_STATE_DOWN)     )
 #define GET_MOUSE_POSITION(x, y)  ( Input_GetMousePosition(x, y) )
+#define GET_MOUSE_DELTA(x, y)     ( SDL_GetRelativeMouseState(x, y) )
 
 /***** Types *****/
 

@@ -8,7 +8,7 @@
 CC   := cc
 OPT  := -Wall
 INC  := `sdl2-config --cflags`
-LIB  := -lSDL2
+LIB  := -lSDL2 -lSDL2_ttf
 PROJ := input
 
 # Rules
