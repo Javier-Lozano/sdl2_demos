@@ -7,43 +7,42 @@
 /***** Macros *****/
 
 // Keyboard
-#define CHECK_SC_PRESSED(scancode)  ( Input_CheckScancode(scancode, BUTTON_STATE_PRESSED)  )
-#define CHECK_SC_RELEASED(scancode) ( Input_CheckScancode(scancode, BUTTON_STATE_RELEASED) )
-#define CHECK_SC_DOWN(scancode)     ( Input_CheckScancode(scancode, BUTTON_STATE_DOWN)     )
+#define CHECK_KEY_PRESSED(key)  ( InputCheckScancode(SDL_GetScancodeFromKey(key), STATE_PRESSED)  )
+#define CHECK_KEY_RELEASED(key) ( InputCheckScancode(SDL_GetScancodeFromKey(key), STATE_RELEASED) )
+#define CHECK_KEY_DOWN(key)     ( InputCheckScancode(SDL_GetScancodeFromKey(key), STATE_DOWN)     )
 
-#define CHECK_KEY_PRESSED(key)  ( CHECK_SC_PRESSED(SDL_GetScancodeFromKey(key))  )
-#define CHECK_KEY_RELEASED(key) ( CHECK_SC_RELEASED(SDL_GetScancodeFromKey(key)) )
-#define CHECK_KEY_DOWN(key)     ( CHECK_SC_DOWN(SDL_GetScancodeFromKey(key))     )
+#define CHECK_SC_PRESSED(key)  ( InputCheckScancode(key, STATE_PRESSED)  )
+#define CHECK_SC_RELEASED(key) ( InputCheckScancode(key, STATE_RELEASED) )
+#define CHECK_SC_DOWN(key)     ( InputCheckScancode(key, STATE_DOWN)     )
 
 // Mouse
-#define CHECK_MOUSE_PRESSED(button)  ( Input_CheckMouseButton(button, BUTTON_STATE_PRESSED)  )
-#define CHECK_MOUSE_RELEASED(button) ( Input_CheckMouseButton(button, BUTTON_STATE_RELEASED) )
-#define CHECK_MOUSE_DOWN(button)     ( Input_CheckMouseButton(button, BUTTON_STATE_DOWN)     )
-
-#define GET_MOUSE_POSITION(x, y)  ( Input_GetMousePosition(x, y, NULL, NULL) )
-#define GET_MOUSE_DELTA(x, y)     ( Input_GetMousePosition(NULL, NULL, x, y) )
+#define CHECK_MOUSE_PRESSED(key)  ( InputCheckMouseButton(key, STATE_PRESSED)  )
+#define CHECK_MOUSE_RELEASED(key) ( InputCheckMouseButton(key, STATE_RELEASED) )
+#define CHECK_MOUSE_DOWN(key)     ( InputCheckMouseButton(key, STATE_DOWN)     )
+#define GET_MOUSE_POSITION(x, y)  ( InputGetMousePosition(x, y) )
+#define GET_MOUSE_DELTA(x, y)     ( SDL_GetRelativeMouseState(x, y) )
 
 /***** Types *****/
 
 typedef enum {
-	BUTTON_STATE_DOWN     = 1,
-	BUTTON_STATE_PRESSED  = 2,
-	BUTTON_STATE_RELEASED = 4
-} Input_ButtonState;
+	STATE_DOWN     = 1,
+	STATE_PRESSED  = 2,
+	STATE_RELEASED = 4
+} InputButtonState;
 
 typedef enum {
-	MOUSE_BUTTON_LEFT,
-	MOUSE_BUTTON_MIDDLE,
-	MOUSE_BUTTON_RIGHT,
+	MOUSE_LEFT,
+	MOUSE_MIDDLE,
+	MOUSE_RIGHT,
 	MOUSE_BUTTON_COUNT
-} Input_MouseButton;
+} InputMouseButton;
 
 /***** Functions *****/
 
-void Input_Update();
+void InputUpdate();
 
-bool Input_CheckScancode(SDL_Scancode scancode, Input_ButtonState state);
-bool Input_CheckMouseButton(Input_MouseButton mouse_button, Input_ButtonState state);
-void Input_GetMousePosition(int *x, int *y, int *dx, int *dy);
+bool InputCheckScancode(SDL_Scancode scancode, InputButtonState state);
+bool InputCheckMouseButton(InputMouseButton mouse_button, InputButtonState state);
+void InputGetMousePosition(int *x, int *y);
 
 #endif // _INPUT_H_

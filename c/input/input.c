@@ -4,12 +4,12 @@
 
 static Uint8 g_KeyboardPressState[SDL_NUM_SCANCODES];
 static Uint8 g_MousePressState[MOUSE_BUTTON_COUNT];
-static int g_MouseX[2];
-static int g_MouseY[2];
+static int g_MouseX;
+static int g_MouseY;
 
 /***** Functions ******/
 
-void Input_Update()
+void InputUpdate()
 {
 	// Keyboard 
 
@@ -22,18 +22,18 @@ void Input_Update()
 
 		if (keyboard_state[i])
 		{
-			state = BUTTON_STATE_DOWN;
+			state = STATE_DOWN;
 
 			if (!CHECK_SC_DOWN(i))
 			{
-				state |= BUTTON_STATE_PRESSED;
+				state |= STATE_PRESSED;
 			}
 		}
 		else
 		{
 			if (CHECK_SC_DOWN(i))
 			{
-				state |= BUTTON_STATE_RELEASED;
+				state |= STATE_RELEASED;
 			}
 		}
 
@@ -42,9 +42,7 @@ void Input_Update()
 
 	// Mouse
 
-	g_MouseX[1] = g_MouseX[0];
-	g_MouseY[1] = g_MouseY[0];
-	int button_state = SDL_GetMouseState(&g_MouseX[0], &g_MouseY[0]);
+	int button_state = SDL_GetMouseState(&g_MouseX, &g_MouseY);
 
 	// Iterate over only 3 main mouse buttons
 	for(int i = 0; i < MOUSE_BUTTON_COUNT; i++)
@@ -54,18 +52,18 @@ void Input_Update()
 
 		if (button_pressed)
 		{
-			state = BUTTON_STATE_DOWN;
+			state = STATE_DOWN;
 
 			if (!CHECK_MOUSE_DOWN(i))
 			{
-				state |= BUTTON_STATE_PRESSED;
+				state |= STATE_PRESSED;
 			}
 		}
 		else
 		{
 			if (CHECK_MOUSE_DOWN(i))
 			{
-				state |= BUTTON_STATE_RELEASED;
+				state |= STATE_RELEASED;
 			}
 		}
 
@@ -73,34 +71,26 @@ void Input_Update()
 	}
 }
 
-bool Input_CheckScancode(SDL_Scancode scancode, Input_ButtonState state)
+bool InputCheckScancode(SDL_Scancode scancode, InputButtonState state)
 {
 	if (scancode < 0 || scancode > SDL_NUM_SCANCODES) { return false; }
 	return (g_KeyboardPressState[scancode] & state) == state;
 }
 
-bool Input_CheckMouseButton(Input_MouseButton button, Input_ButtonState state)
+bool InputCheckMouseButton(InputMouseButton button, InputButtonState state)
 {
 	if (button < 0 || button > MOUSE_BUTTON_COUNT) { return false; }
 	return (g_MousePressState[button] & state) == state;
 }
 
-void Input_GetMousePosition(int *x, int *y, int *dx, int *dy)
+void InputGetMousePosition(int *x, int *y)
 {
 	if (x != NULL)
 	{
-		*x = g_MouseX[0];
+		*x = g_MouseX;
 	}
 	if (y != NULL)
 	{
-		*y = g_MouseY[0];
-	}
-	if (dx != NULL)
-	{
-		*dx = g_MouseX[0] - g_MouseX[1];
-	}
-	if (dy != NULL)
-	{
-		*dy = g_MouseY[0] - g_MouseY[1];
+		*y = g_MouseY;
 	}
 }
