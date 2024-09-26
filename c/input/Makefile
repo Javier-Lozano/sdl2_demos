@@ -5,30 +5,32 @@
 
 # Variables
 
-CC   := cc
-OPT  := -Wall
-INC  := `sdl2-config --cflags`
-LIB  := -lSDL2 -lSDL2_ttf
-PROJ := input
+CC      := cc
+OPT     := -Wall
+I_FLAGS := `sdl2-config --cflags`
+L_FLAGS := -lSDL2 -lSDL2_ttf
+PROJECT := input
 
 # Rules
 
-all: $(PROJ)
+all: $(PROJECT)
 
 debug: OPT += -g
-debug: $(PROJ)
+debug: $(PROJECT)
 
-$(PROJ): main.o input.o
-	$(CC) $(OPT) $^ -o $@ $(LIB)
-main.o: main.c
-	$(CC) $(OPT) $(INC) -c $<
+$(PROJECT): main.o input.o init.o
+	$(CC) $(OPT) $^ -o $@ $(L_FLAGS)
+main.o: main.c main.h
+	$(CC) $(OPT) $(I_FLAGS) -c $<
+init.o: init.c main.h
+	$(CC) $(OPT) $(I_FLAGS) -c $<
 input.o: input.c input.h
-	$(CC) $(OPT) $(INC) -c $<
+	$(CC) $(OPT) $(I_FLAGS) -c $<
 
 # Clean
 
 .PHONY: clean
 clean:
 	@rm -fv *.o
-	@rm -fv $(PROJ)
+	@rm -fv $(PROJECT)
 

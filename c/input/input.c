@@ -4,8 +4,8 @@
 
 static Uint8 g_KeyboardPressState[SDL_NUM_SCANCODES];
 static Uint8 g_MousePressState[MOUSE_BUTTON_COUNT];
-static int g_MouseX;
-static int g_MouseY;
+static int g_MouseX[2];
+static int g_MouseY[2];
 
 /***** Functions ******/
 
@@ -42,7 +42,9 @@ void InputUpdate()
 
 	// Mouse
 
-	int button_state = SDL_GetMouseState(&g_MouseX, &g_MouseY);
+	g_MouseX[1] = g_MouseX[0];
+	g_MouseY[1] = g_MouseY[0];
+	int button_state = SDL_GetMouseState(g_MouseX, g_MouseY);
 
 	// Iterate over only 3 main mouse buttons
 	for(int i = 0; i < MOUSE_BUTTON_COUNT; i++)
@@ -83,14 +85,22 @@ bool InputCheckMouseButton(InputMouseButton button, InputButtonState state)
 	return (g_MousePressState[button] & state) == state;
 }
 
-void InputGetMousePosition(int *x, int *y)
+void InputGetMousePosition(int *x, int *y, int *dx, int *dy)
 {
 	if (x != NULL)
 	{
-		*x = g_MouseX;
+		*x = g_MouseX[0];
 	}
 	if (y != NULL)
 	{
-		*y = g_MouseY;
+		*y = g_MouseY[0];
+	}
+	if (dx != NULL)
+	{
+		*dx = g_MouseX[0] - g_MouseX[1];
+	}
+	if (dy != NULL)
+	{
+		*dy = g_MouseY[0] - g_MouseY[1];
 	}
 }

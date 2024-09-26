@@ -1,86 +1,67 @@
-#include <stdbool.h>
-#include "SDL.h"
+#include "main.h"
 
-#define WINDOW_TITLE  "Template"
-#define WINDOW_WIDTH  (800)
-#define WINDOW_HEIGHT (600)
-
-#define INIT_FLAGS   (SDL_INIT_VIDEO | SDL_INIT_AUDIO)
-#define WINDOW_FLAGS (SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE)
-#define RENDER_FLAGS (SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
-
-static bool SDLInit(SDL_Window **window, SDL_Renderer **renderer);
-static void SDLClose(SDL_Window **window, SDL_Renderer **renderer);
+/***** Main *****/
 
 int main( int argc, char **argv)
 {
 	SDL_Window   *window   = NULL;
 	SDL_Renderer *renderer = NULL;
 	SDL_Event     event;
-	bool is_running = true;
+	bool          is_running = true;
 
-	if (!SDLInit(&window, &renderer))
-	{
-		return 0;
-	}
+	const float pi_2 = 6.2831f;
 
-	// Main Loop
-	while(is_running)
+	SDL_FPoint p[3];
+	SDL_Point  center;
+	float      radius;
+	float      angle = 0;
+
+	if (SDLInit(&window, &renderer))
 	{
-		// SDL Events
-		while(SDL_PollEvent(&event))
+		while(is_running)
 		{
-			if (event.type == SDL_QUIT) { is_running = 0; }
+			// Events
+			while(SDL_PollEvent(&event))
+			{
+				if (event.type == SDL_QUIT) { is_running = 0; }
+			}
+
+			// Get Window's center
+			SDL_GetWindowSize(window, &center.x, &center.y);
+			center.x /= 2;
+			center.y /= 2;
+
+			// Set Radius to half height
+			radius = (float)center.y;
+
+			// SPIN!!!
+			angle += 0.01f;
+			if (angle > pi_2) { angle -= pi_2; }
+
+			for(int i = 0; i < 3; i++)
+			{
+				p[i].x = (SDL_cos(angle + (pi_2 / 3 * (i + 1))) * radius) + center.x;
+				p[i].y = (SDL_sin(angle + (pi_2 / 3 * (i + 1))) * radius) + center.y;
+			}
+
+			// Clear screen
+			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
+			SDL_RenderClear(renderer);
+
+			// Draw a spinning Triangle
+			SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0x80, 0xFF);
+			SDL_RenderDrawLineF(renderer, center.x, center.y, p[0].x, p[0].y);
+			SDL_RenderDrawLineF(renderer, p[0].x, p[0].y, p[1].x, p[1].y);
+			SDL_RenderDrawLineF(renderer, p[1].x, p[1].y, p[2].x, p[2].y);
+			SDL_RenderDrawLineF(renderer, p[2].x, p[2].y, p[0].x, p[0].y);
+
+			// Present to screen
+			SDL_RenderPresent(renderer);
 		}
-		
-		// SDL Rendering
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
-		SDL_RenderClear(renderer);
-
-		// Draw Something Here
-		int window_w;
-		int window_h;
-		SDL_GetWindowSize(window, &window_w, &window_h);
-
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-		SDL_RenderFillRect(renderer, &(SDL_Rect){32, 32, window_w - 64, window_h - 64});
-
-		SDL_RenderPresent(renderer);
 	}
 
 	SDLClose(&window, &renderer);
-	printf("\nSEE YOU SPACE COWBOY\n");
+	printf("\nSEE YOU SPACE COWBOY...\n");
 	return 0;
 }
 
-static bool SDLInit(SDL_Window **window, SDL_Renderer **renderer)
-{
-	if (SDL_Init(INIT_FLAGS) < 0)
-	{
-		fprintf(stderr, "Error: Couldn't init SDL. %s\n", SDL_GetError());
-		return false;
-	}
-
-	*window = SDL_CreateWindow(WINDOW_TITLE, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_FLAGS);
-	if (*window == NULL)
-	{
-		fprintf(stderr, "Error: Couldn't create window. %s\n", SDL_GetError());
-		return false;
-	}
-	*renderer = SDL_CreateRenderer(*window, -1, RENDER_FLAGS);
-	if (*renderer == NULL)
-	{
-		fprintf(stderr, "Error: Couldn't create renderer. %s\n", SDL_GetError());
-		return false;
-	}
-	SDL_SetRenderDrawBlendMode(*renderer, SDL_BLENDMODE_BLEND);
-	
-	return true;
-}
-
-static void SDLClose(SDL_Window **window, SDL_Renderer **renderer)
-{
-	SDL_DestroyRenderer(*renderer);
-	SDL_DestroyWindow(*window);
-	SDL_Quit();
-}

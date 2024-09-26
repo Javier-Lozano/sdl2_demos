@@ -1,23 +1,25 @@
-#include <stdbool.h>
-#include "SDL.h"
-#include "SDL_ttf.h"
-#include "input.h"
+#include "main.h"
 
-#define WINDOW_TITLE  "Input"
-#define WINDOW_WIDTH  (800)
-#define WINDOW_HEIGHT (600)
+/***** Types *****/
 
-#define INIT_FLAGS   (SDL_INIT_VIDEO | SDL_INIT_AUDIO)
-#define WINDOW_FLAGS (SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE)
-#define RENDER_FLAGS (SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
+typedef struct polygon_st {
+	SDL_Point position;
+	float     radius;
+	float     angle;
+	float     speed;
+	int       sides;
+	bool      is_held;
+	bool      is_colliding;
+} Polygon;
 
-static bool SDLInit(SDL_Window **window, SDL_Renderer **renderer, TTF_Font **font);
-static void SDLClose(SDL_Window **window, SDL_Renderer **renderer, TTF_Font **font);
+/***** Functions *****/
 
 static void RenderText(SDL_Renderer *renderer, TTF_Font *font, int font_size, char *text, int x, int y, SDL_Color color);
 static bool PointCircleCollison(int x1, int y1, int x2, int y2, float radius);
+static void PolygonUpdate(Polygon *polygon);
+static void PolygonDraw(SDL_Renderer *renderer, TTF_Font *font, Polygon *polygon);
 
-static void DrawPolygon(SDL_Renderer *renderer, TTF_Font *font);
+/***** Main *****/
 
 int main( int argc, char **argv)
 {
@@ -25,86 +27,46 @@ int main( int argc, char **argv)
 	SDL_Renderer *renderer = NULL;
 	TTF_Font     *font     = NULL;
 	SDL_Event     event;
-	bool is_running = true;
+	bool          is_running = true;
 
-	// Init
-	if (!SDLInit(&window, &renderer, &font)) { return 0; }
+	Polygon polygon = {
+		.position = { .x = WINDOW_WIDTH / 2, .y = WINDOW_HEIGHT / 2 },
+		.radius = 100.0f,
+		.sides  = 6,
+		.speed  = 0.01f
+	};
 
-	// Main Loop
-	while(is_running)
+	if (SDLInit(&window, &renderer, &font))
 	{
-		// SDL Events
-		while(SDL_PollEvent(&event))
+		while(is_running)
 		{
-			if (event.type == SDL_QUIT) { is_running = 0; }
+			// Events
+			while(SDL_PollEvent(&event))
+			{
+				if (event.type == SDL_QUIT) { is_running = 0; }
+			}
+
+			// Update Input
+			InputUpdate();
+
+			// Update Polygon
+			PolygonUpdate(&polygon);
+
+			// Clear screen
+			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
+			SDL_RenderClear(renderer);
+
+			// Draw Polygon
+			PolygonDraw(renderer, font, &polygon);
+
+			// Present to screen
+			SDL_RenderPresent(renderer);
 		}
-
-		// Update
-		InputUpdate(&event);
-
-		// Rendering
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
-		SDL_RenderClear(renderer);
-
-		DrawPolygon(renderer, font);
-
-		SDL_RenderPresent(renderer);
 	}
 
 	SDLClose(&window, &renderer, &font);
 	printf("\nSEE YOU SPACE COWBOY\n");
 	return 0;
-}
-
-static bool SDLInit(SDL_Window **window, SDL_Renderer **renderer, TTF_Font **font)
-{
-	if (SDL_Init(INIT_FLAGS) < 0)
-	{
-		fprintf(stderr, "Error: Couldn't init SDL. %s\n", SDL_GetError());
-		return false;
-	}
-	if (TTF_Init() == -1)
-	{
-		fprintf(stderr, "Error: Couldn't init SDL_ttf. %s\n", TTF_GetError());
-		return false;
-	}
-
-	// Create Window and Renderer
-	*window = SDL_CreateWindow(WINDOW_TITLE, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_FLAGS);
-	if (*window == NULL)
-	{
-		fprintf(stderr, "Error: Couldn't create window. %s\n", SDL_GetError());
-		return false;
-	}
-	*renderer = SDL_CreateRenderer(*window, -1, RENDER_FLAGS);
-	if (*renderer == NULL)
-	{
-		fprintf(stderr, "Error: Couldn't create renderer. %s\n", SDL_GetError());
-		return false;
-	}
-	SDL_SetRenderDrawBlendMode(*renderer, SDL_BLENDMODE_BLEND);
-
-	// Load Font
-	*font = TTF_OpenFont("../../assets/ModernDOS8x8.ttf", 16);
-	if (font == NULL)
-	{
-		fprintf(stderr, "Error: Couldn't load TTF_Font. %s\n", TTF_GetError());
-		return false;
-	}
-	
-	return true;
-}
-
-static void SDLClose(SDL_Window **window, SDL_Renderer **renderer, TTF_Font **font)
-{
-	// Close TTF
-	TTF_CloseFont(*font);
-	TTF_Quit();
-
-	// Close SDL2
-	SDL_DestroyRenderer(*renderer);
-	SDL_DestroyWindow(*window);
-	SDL_Quit();
 }
 
 static void RenderText(SDL_Renderer *renderer, TTF_Font *font, int font_size, char *text, int x, int y, SDL_Color color)
@@ -154,129 +116,100 @@ static bool PointCircleCollison(int x1, int y1, int x2, int y2, float radius)
 	return distance < SDL_abs(radius);
 }
 
-static void DrawPolygon(SDL_Renderer *renderer, TTF_Font *font)
+static void PolygonUpdate(Polygon *polygon)
 {
-	const float pi_2 = 6.2831f;
+	SDL_Point mouse_position;
+	SDL_Point mouse_delta;
 
-	static SDL_Point polygon_coords;
-	static bool      polygon_snap;
-	static float     polygon_angle;
-	static float     polygon_radius = 100.0f;
-	static int       polygon_sides  = 6;
-	static float     angle_speed = 0.01f;
-
-	SDL_Point window_size;
-	SDL_Point center;
-	SDL_Point polygon_pos; // Offseted Polygon Coords
-	SDL_Point mouse_pos;
-	SDL_Point mouse_dt;
-
-	// Get Window's center
-	SDL_GetWindowSize(SDL_RenderGetWindow(renderer), &window_size.x, &window_size.y);
-	center.x = window_size.x / 2;
-	center.y = window_size.y / 2;
-	// Get Polygon center position
-	polygon_pos.x = polygon_coords.x + center.x;
-	polygon_pos.y = polygon_coords.y + center.y;
 	// Mouse Position
-	GET_MOUSE_POSITION(&mouse_pos.x, &mouse_pos.y);
-	//  Mouse Delta
-	GET_MOUSE_DELTA(&mouse_dt.x, &mouse_dt.y);
+	GET_MOUSE_POSITION(&mouse_position.x, &mouse_position.y);
+	GET_MOUSE_DELTA(&mouse_delta.x, &mouse_delta.y);
 
-	// Check Collision
-	bool collision = PointCircleCollison(mouse_pos.x, mouse_pos.y, polygon_pos.x, polygon_pos.y, polygon_radius);
-
-	// Polygon Mechanics? (Controls)
+	// Check Mouse / Polygon Collision
+	polygon->is_colliding = PointCircleCollison(
+			mouse_position.x, mouse_position.y,
+			polygon->position.x, polygon->position.y,
+			polygon->radius);
 
 	// Drag
-	if ((collision && CHECK_MOUSE_PRESSED(MOUSE_LEFT)) || polygon_snap)
+	if ((polygon->is_colliding && CHECK_MOUSE_PRESSED(MOUSE_LEFT)) || polygon->is_held)
 	{
-		polygon_coords.x += mouse_dt.x;
-		polygon_coords.y += mouse_dt.y;
-		polygon_snap = true;
+		polygon->position.x += mouse_delta.x;
+		polygon->position.y += mouse_delta.y;
+		polygon->is_held = true;
 	}
-	if (CHECK_MOUSE_RELEASED(MOUSE_LEFT)) { polygon_snap = false; }
-
+	if (CHECK_MOUSE_RELEASED(MOUSE_LEFT)) { polygon->is_held = false; }
 	// Increase Radius
-	if (CHECK_KEY_DOWN(SDLK_UP))   { polygon_radius += 2.5f; }
-	if (CHECK_KEY_DOWN(SDLK_DOWN)) { polygon_radius -= 2.5f; }
-	// Increase Rotation
-	if (CHECK_KEY_DOWN(SDLK_RIGHT)) { angle_speed += 0.001f; }
-	if (CHECK_KEY_DOWN(SDLK_LEFT))  { angle_speed -= 0.001f; }
+	if (CHECK_KEY_DOWN(SDLK_UP))   { polygon->radius += 2.5f; }
+	if (CHECK_KEY_DOWN(SDLK_DOWN)) { polygon->radius -= 2.5f; }
+	// Increase Rotation Speed
+	if (CHECK_KEY_DOWN(SDLK_RIGHT)) { polygon->speed += 0.001f; }
+	if (CHECK_KEY_DOWN(SDLK_LEFT))  { polygon->speed -= 0.001f; }
 	// Increase Side number
-	if (CHECK_KEY_PRESSED(SDLK_PAGEUP))   { polygon_sides += 1; }
-	if (CHECK_KEY_PRESSED(SDLK_PAGEDOWN)) { polygon_sides -= 1; }
-	if (polygon_sides < 3) { polygon_sides = 3; }
-
-	// Draw Polygon
-	if (collision || polygon_snap)
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0 ,0xFF);
-	else
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF ,0xFF);
-
-	polygon_angle += angle_speed; // Spin!
-	for (int i = 0; i < polygon_sides; i++)
-	{
-		const float section = pi_2 / (float)polygon_sides;
-		const float angle = polygon_angle + (section * i);
-
-		float x1 = (SDL_cos(angle) * polygon_radius) + polygon_pos.x;
-		float y1 = (SDL_sin(angle) * polygon_radius) + polygon_pos.y;
-		float x2 = (SDL_cos(angle + section) * polygon_radius) + polygon_pos.x;
-		float y2 = (SDL_sin(angle + section) * polygon_radius) + polygon_pos.y;
-
-		SDL_RenderDrawLineF(renderer, x1, y1, x2, y2);
-		if (i == 0) { SDL_RenderDrawLineF(renderer, polygon_pos.x, polygon_pos.y, x1, y1); }
-	}
-
-	// Draw Text
-	SDL_Color white = {0xFF, 0xFF, 0xFF, 0xFF};
-	SDL_Color red = {0xFF, 0, 0, 0xFF};
-	char buffer[64];
-
-	// Polygon Draw
-	if (CHECK_MOUSE_DOWN(MOUSE_LEFT))
-		RenderText(renderer, font, 32, "[MOUSE LEFT BUTTON]", 16, 16, red);
-	else
-		RenderText(renderer, font, 32, "[MOUSE LEFT BUTTON]", 16, 16, white);
-	RenderText(renderer, font, 32, "- DRAGS THE POLYGON AROUND.", 336, 16, white);
-
-	// Increase / Decrease Radius
-	if (CHECK_KEY_DOWN(SDLK_UP) || CHECK_KEY_DOWN(SDLK_DOWN))
-		RenderText(renderer, font, 32, "[UP/DOWN]", 176, (16 * 3), red);
-	else
-		RenderText(renderer, font, 32, "[UP/DOWN]", 176, (16 * 3), white);
-	RenderText(renderer, font, 32, "- INCREASE/DECREASE RADIUS.", 336, (16 * 3), white);
-
-	// Increase / Decrease Rotation Speed
-	if (CHECK_KEY_DOWN(SDLK_LEFT) || CHECK_KEY_DOWN(SDLK_RIGHT))
-		RenderText(renderer, font, 32, "[LEFT/RIGHT]", 128, (16 * 5), red);
-	else
-		RenderText(renderer, font, 32, "[LEFT/RIGHT]", 128, (16 * 5), white);
-	RenderText(renderer, font, 32, "- INCREASE/DECREASE ROTATION.", 336, (16 * 5), white);
-
-	// Increase / Decrease Sides
-	if (CHECK_KEY_DOWN(SDLK_PAGEUP) || CHECK_KEY_DOWN(SDLK_PAGEDOWN))
-		RenderText(renderer, font, 32, "[PAGE UP/PAGE DOWN]", 16, (16 * 7), red);
-	else
-		RenderText(renderer, font, 32, "[PAGE UP/PAGE DOWN]", 16, (16 * 7), white);
-	RenderText(renderer, font, 32, "- INCREASE/DECREASE SIDES.", 336, (16 * 7), white);
-
-	snprintf(buffer, 64, "%.2f", polygon_radius);
-	RenderText(renderer, font, 32, "RADIUS:", 64, window_size.y - (16 * 8), white);
-	RenderText(renderer, font, 32, buffer, (16 * 12), window_size.y - (16 * 8), red);
-	snprintf(buffer, 64, "%.2f", angle_speed);
-	RenderText(renderer, font, 32, "SPEED:", 80, window_size.y - (16 * 6), white);
-	RenderText(renderer, font, 32, buffer, (16 * 12), window_size.y - (16 * 6), red);
-	snprintf(buffer, 64, "%d", polygon_sides);
-	RenderText(renderer, font, 32, "SIDES:", 80, window_size.y - (16 * 4), white);
-	RenderText(renderer, font, 32, buffer, (16 * 12), window_size.y - (16 * 4), red);
-	snprintf(buffer, 64, "(%d, %d)", polygon_pos.x, polygon_pos.y);
-	RenderText(renderer, font, 32, "POSITION:", 32, window_size.y - (16 * 2), white);
-	RenderText(renderer, font, 32, buffer, (16 * 12), window_size.y -(16 * 2), red);
-
-	SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0, 0xFF);
-	SDL_RenderDrawLineF(renderer, mouse_pos.x, mouse_pos.y, mouse_pos.x - mouse_dt.x, mouse_pos.y - mouse_dt.y);
+	if (CHECK_KEY_PRESSED(SDLK_PAGEUP))   { polygon->sides += 1; }
+	if (CHECK_KEY_PRESSED(SDLK_PAGEDOWN)) { polygon->sides -= 1; }
+	if (polygon->sides < 3) { polygon->sides = 3; }
+	// Increase Angle
+	polygon->angle += polygon->speed; // Spin!
 }
 
+static void PolygonDraw(SDL_Renderer *renderer, TTF_Font *font, Polygon *polygon)
+{
+	const SDL_Color white = {0xFF, 0xFF, 0xFF, 0xFF};
+	const SDL_Color red   = {0xFF, 0, 0, 0xFF};
+
+	SDL_Color selected;
+	int       window_h;
+	char      buffer[64];
+
+	selected = (polygon->is_colliding || polygon->is_held) ? red : white;
+	SDL_SetRenderDrawColor(renderer, selected.r, selected.g, selected.b, selected.a);
+
+	for (int i = 0; i < polygon->sides; i++)
+	{
+		const float pi_2    = 6.2831f;
+		const float section = pi_2 / (float)polygon->sides;
+
+		float x1 = (SDL_cos(polygon->angle + (section * i)) * polygon->radius) + polygon->position.x;
+		float y1 = (SDL_sin(polygon->angle + (section * i)) * polygon->radius) + polygon->position.y;
+		float x2 = (SDL_cos(polygon->angle + (section * (i + 1))) * polygon->radius) + polygon->position.x;
+		float y2 = (SDL_sin(polygon->angle + (section * (i + 1))) * polygon->radius) + polygon->position.y;
+
+		SDL_RenderDrawLineF(renderer, x1, y1, x2, y2);
+		if (i == 0) { SDL_RenderDrawLineF(renderer, polygon->position.x, polygon->position.y, x1, y1); }
+	}
+
+	// Polygon Draw
+	RenderText(renderer, font, 32, "[Mouse Left Button]", 16, 0, CHECK_MOUSE_DOWN(MOUSE_LEFT) ? red : white);
+	RenderText(renderer, font, 32, "- Drags the polygon around.", 336, 0, white);
+
+	// Increase / Decrease Radius
+	RenderText(renderer, font, 32, "[Up/Down]", 176, 32, (CHECK_KEY_DOWN(SDLK_UP) || CHECK_KEY_DOWN(SDLK_DOWN)) ? red : white);
+	RenderText(renderer, font, 32, "- Increase/Decrease Radius.", 336, 32, white);
+
+	// Increase / Decrease Rotation Speed
+	RenderText(renderer, font, 32, "[Left/Right]", 128, 64, (CHECK_KEY_DOWN(SDLK_LEFT) || CHECK_KEY_DOWN(SDLK_RIGHT)) ? red : white);
+	RenderText(renderer, font, 32, "- Increase/Decrease Rotation.", 336, 64, white);
+
+	// Increase / Decrease Sides
+	RenderText(renderer, font, 32, "[Page Up/Page Down]", 16, 96, (CHECK_KEY_DOWN(SDLK_PAGEUP) || CHECK_KEY_DOWN(SDLK_PAGEDOWN)) ? red : white);
+	RenderText(renderer, font, 32, "- Increase/Decrease Sides.", 336, 96, white);
+
+	// Get Window Height
+	SDL_GetWindowSize(SDL_RenderGetWindow(renderer), NULL, &window_h);
+
+	// Draw values
+	snprintf(buffer, 64, "%.2f", polygon->radius);
+	RenderText(renderer, font, 32, "Radius:", 64, window_h - (16 * 8), white);
+	RenderText(renderer, font, 32, buffer, (16 * 12), window_h - (16 * 8), red);
+	snprintf(buffer, 64, "%.2f", polygon->speed);
+	RenderText(renderer, font, 32, "Speed:", 80, window_h - (16 * 6), white);
+	RenderText(renderer, font, 32, buffer, (16 * 12), window_h - (16 * 6), red);
+	snprintf(buffer, 64, "%d", polygon->sides);
+	RenderText(renderer, font, 32, "Sides:", 80, window_h - (16 * 4), white);
+	RenderText(renderer, font, 32, buffer, (16 * 12), window_h - (16 * 4), red);
+	snprintf(buffer, 64, "(%d, %d)", polygon->position.x, polygon->position.y);
+	RenderText(renderer, font, 32, "Position:", 32, window_h - (16 * 2), white);
+	RenderText(renderer, font, 32, buffer, (16 * 12), window_h -(16 * 2), red);
+}
 
